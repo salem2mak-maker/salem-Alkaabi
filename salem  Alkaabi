@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تطبيق TikTok تجريبي</title>
+<style>
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#121212; color:#fff; }
+.page { display:none; padding:20px; }
+input, button { display:block; margin:10px 0; padding:10px; border:none; border-radius:5px; }
+button { cursor:pointer; background:#ff0044; color:#fff; font-weight:bold; }
+.hidden { display:none; }
+header { display:flex; justify-content:space-between; align-items:center; }
+#certificate { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; color:#000; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999; }
+#videosList div, #chatMessages div, #plus18Content div { background:#1e1e1e; margin:5px 0; padding:10px; border-radius:8px; }
+#adminPanel input { width:95%; }
+</style>
+</head>
+<body>
+
+<!-- شهادة التطبيق -->
+<div id="certificate">
+  <h2>شهادة التطبيق التجريبي</h2>
+  <p>مرحباً! هذا التطبيق نسخة تجريبية محسنة.</p>
+  <button onclick="closeCertificate()">أوافق وأغلق الشهادة</button>
+</div>
+
+<!-- صفحة تسجيل الدخول -->
+<div id="loginPage" class="page">
+  <h1>تسجيل الدخول</h1>
+  <input type="text" id="username" placeholder="اسم المستخدم">
+  <input type="password" id="password" placeholder="كلمة المرور">
+  <input type="text" id="pin" placeholder="رمز PIN">
+  <button onclick="login()">دخول</button>
+</div>
+
+<!-- الصفحة الرئيسية -->
+<div id="homePage" class="page hidden">
+  <header>
+    <h2>تطبيق TikTok تجريبي</h2>
+    <button onclick="logout()">تسجيل خروج</button>
+  </header>
+  <div id="videosList"></div>
+  <button onclick="showChat()">الدردشات</button>
+  <button onclick="showPlus18()">+18</button>
+  <button onclick="showAdminPanel()" id="adminPanelBtn" class="hidden">لوحة الإدارة</button>
+</div>
+
+<!-- الدردشات -->
+<div id="chatPage" class="page hidden">
+  <h3>الدردشات</h3>
+  <div id="chatMessages"></div>
+  <input type="text" id="chatInput" placeholder="اكتب رسالة">
+  <button onclick="sendMessage()">إرسال</button>
+  <button onclick="showHome()">العودة للرئيسية</button>
+</div>
+
+<!-- +18 -->
+<div id="plus18Page" class="page hidden">
+  <h3>محتوى +18 تجريبي</h3>
+  <div id="plus18Content"></div>
+  <input type="text" id="plus18Input" placeholder="اكتب محتوى">
+  <button onclick="sendPlus18()">إرسال</button>
+  <button onclick="showHome()">العودة للرئيسية</button>
+</div>
+
+<!-- لوحة الإدارة -->
+<div id="adminPanel" class="page hidden">
+  <h3>لوحة الإدارة</h3>
+  <div id="userListAdmin"></div>
+  <input type="text" id="verifyUser" placeholder="اسم المستخدم للتوثيق">
+  <button onclick="verifyUser()">توثيق</button>
+  <button onclick="showHome()">العودة للرئيسية</button>
+</div>
+
+<script>
+// البيانات المحلية
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let messages = JSON.parse(localStorage.getItem("messages")) || [];
+let plus18 = JSON.parse(localStorage.getItem("plus18")) || [];
+let currentUser = null;
+
+// الشهادة
+function closeCertificate(){
+  document.getElementById("certificate").style.display="none";
+  showPage("loginPage");
+}
+
+// تبديل الصفحات
+function showPage(pageId){
+  document.querySelectorAll(".page").forEach(p=>p.style.display="none");
+  document.getElementById(pageId).style.display="block";
+}
+
+// تسجيل الدخول
+function login(){
+  const username=document.getElementById("username").value.trim();
+  const password=document.getElementById("password").value.trim();
+  const pin=document.getElementById("pin").value.trim();
+  if(!username||!password){ alert("أدخل الاسم وكلمة المرور"); return; }
+
+  let user=users.find(u=>u.username===username);
+  if(!user){
+    user={username,password,pin,isAdmin:false,isOwner:false};
+    if(users.length===0){ user.isOwner=true; user.isAdmin=true; }
+    users.push(user);
+    localStorage.setItem("users",JSON.stringify(users));
+  } else if(user.password!==password){ alert("كلمة المرور غير صحيحة"); return; }
+
+  currentUser=user;
+  document.getElementById("adminPanelBtn").style.display=(user.isAdmin||user.isOwner)?"inline-block":"none";
+  showHome();
+}
+
+// تسجيل خروج
+function logout(){ currentUser=null; showPage("loginPage"); }
+
+// الصفحة الرئيسية
+function showHome(){ showPage("homePage"); renderVideos(); }
+function renderVideos(){
+  const container=document.getElementById("videosList");
+  container.innerHTML="";
+  for(let i=1;i<=5;i++){
+    const div=document.createElement("div");
+    div.textContent="فيديو تجريبي "+i;
+    container.appendChild(div);
+  }
+}
+
+// الدردشات
+function showChat(){ showPage("chatPage"); renderMessages(); }
+function sendMessage(){
+  const input=document.getElementById("chatInput");
+  if(!input.value.trim()) return;
+  messages.push({user:currentUser.username,text:input.value.trim()});
+  localStorage.setItem("messages",JSON.stringify(messages));
+  input.value="";
+  renderMessages();
+}
+function renderMessages(){
+  const container=document.getElementById("chatMessages");
+  container.innerHTML="";
+  messages.forEach(m=>{
+    const div=document.createElement("div");
+    div.textContent=m.user+": "+m.text;
+    container.appendChild(div);
+  });
+}
+
+// +18
+function showPlus18(){ showPage("plus18Page"); renderPlus18(); }
+function sendPlus18(){
+  const input=document.getElementById("plus18Input");
+  if(!input.value.trim()) return;
+  plus18.push({user:currentUser.username,text:input.value.trim()});
+  localStorage.setItem("plus18",JSON.stringify(plus18));
+  input.value="";
+  renderPlus18();
+}
+function renderPlus18(){
+  const container=document.getElementById("plus18Content");
+  container.innerHTML="";
+  plus18.forEach(p=>{
+    const div=document.createElement("div");
+    div.textContent=p.user+": "+p.text;
+    container.appendChild(div);
+  });
+}
+
+// لوحة الإدارة
+function showAdminPanel(){
+  if(!currentUser.isAdmin&&!currentUser.isOwner) return;
+  showPage("adminPanel");
+  renderUserList();
+}
+function renderUserList(){
+  const container=document.getElementById("userListAdmin");
+  container.innerHTML="";
+  users.forEach(u=>{
+    const div=document.createElement("div");
+    div.textContent=u.username+" - "+(u.isOwner?"مالك":u.isAdmin?"أدمن":"مستخدم");
+    container.appendChild(div);
+  });
+}
+function verifyUser(){
+  const name=document.getElementById("verifyUser").value.trim();
+  if(!name) return;
+  const user=users.find(u=>u.username===name);
+  if(user){ user.isVerified=true;
+    localStorage.setItem("users",JSON.stringify(users));
+    alert(name+" تم توثيقه");
+    renderUserList();
+  } else alert("المستخدم غير موجود");
+}
+</script>
+</body>
+</html>
